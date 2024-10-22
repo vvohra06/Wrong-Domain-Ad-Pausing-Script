@@ -1,24 +1,46 @@
-# Compiled class file
-*.class
+function main() {
+  // Define the allowed domain
+  var allowedDomain = 'webtopia.co';
+  // Define the email to send alerts
+  var alertEmail = 'vaibhav.vohra@webtopia.co';
 
-# Log file
-*.log
+  // Get all active ads including those from Performance Max campaigns
+  var adIterator = AdsApp.ads()
+    .withCondition("Status = 'ENABLED'")
+    .get();
 
-# BlueJ files
-*.ctxt
+  while (adIterator.hasNext()) {
+    var ad = adIterator.next();
+    var urls = [];
 
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
+    // Collect final URLs for various ad types
+    if (ad.isType().expandedTextAd()) {
+      urls.push(ad.asType().expandedTextAd().getFinalUrl());
+    } else if (ad.isType().responsiveSearchAd()) {
+      urls.push(ad.asType().responsiveSearchAd().getFinalUrl());
+    } else if (ad.isType().expandedDynamicSearchAd()) {
+      urls.push(ad.asType().expandedDynamicSearchAd().getFinalUrl());
+    } else if (ad.isType().responsiveDisplayAd()) {
+      urls.push(ad.asType().responsiveDisplayAd().getFinalUrl());
+    } else if (ad.isType().displayUploadAd()) {
+      urls.push(ad.asType().displayUploadAd().getFinalUrl());
+    } else if (ad.isType().callOnlyAd()) {
+      urls.push(ad.asType().callOnlyAd().getFinalUrl());
+    } else if (ad.isType().performanceMaxAd()) {
+      urls.push(ad.asType().performanceMaxAd().getFinalUrl());
+    }
 
-# Package Files #
-*.jar
-*.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
+    // Check if the URLs contain the allowed domain
+    var urlMatches = urls.some(function(url) {
+      return url.includes(allowedDomain);
+    });
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
-replay_pid*
+    // Pause the ad if the URL doesn't match the allowed domain
+    if (!urlMatches) {
+      ad.pause();
+      Logger.log('Paused ad with ID: ' + ad.getId() + ' due to invalid domain.');
+      // Send email alert
+      MailApp.sendEmail(alertEmail, 'Ad Paused Due to Invalid Domain', 'Ad with ID ' + ad.getId() + ' has been paused due to an invalid landing page URL.');
+    }
+  }
+}
