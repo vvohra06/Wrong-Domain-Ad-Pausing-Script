@@ -1,46 +1,37 @@
 function main() {
-  // Define the allowed domain
-  var allowedDomain = 'webtopia.co';
-  // Define the email to send alerts
-  var alertEmail = 'vaibhav.vohra@webtopia.co';
+  const specifiedDomain = "https://bakedbeauty.in/";
+  const emailAddress = "vvohra06@gmail.com";
+  let pausedAds = []; // Array to store paused ads information
 
-  // Get all active ads including those from Performance Max campaigns
-  var adIterator = AdsApp.ads()
-    .withCondition("Status = 'ENABLED'")
+  // Fetch active ads
+  const adIterator = AdsApp.ads()
+    .withCondition("Status = ENABLED")
     .get();
 
   while (adIterator.hasNext()) {
-    var ad = adIterator.next();
-    var urls = [];
+    const ad = adIterator.next();
+    const adUrl = ad.urls().getFinalUrl();
 
-    // Collect final URLs for various ad types
-    if (ad.isType().expandedTextAd()) {
-      urls.push(ad.asType().expandedTextAd().getFinalUrl());
-    } else if (ad.isType().responsiveSearchAd()) {
-      urls.push(ad.asType().responsiveSearchAd().getFinalUrl());
-    } else if (ad.isType().expandedDynamicSearchAd()) {
-      urls.push(ad.asType().expandedDynamicSearchAd().getFinalUrl());
-    } else if (ad.isType().responsiveDisplayAd()) {
-      urls.push(ad.asType().responsiveDisplayAd().getFinalUrl());
-    } else if (ad.isType().displayUploadAd()) {
-      urls.push(ad.asType().displayUploadAd().getFinalUrl());
-    } else if (ad.isType().callOnlyAd()) {
-      urls.push(ad.asType().callOnlyAd().getFinalUrl());
-    } else if (ad.isType().performanceMaxAd()) {
-      urls.push(ad.asType().performanceMaxAd().getFinalUrl());
-    }
-
-    // Check if the URLs contain the allowed domain
-    var urlMatches = urls.some(function(url) {
-      return url.includes(allowedDomain);
-    });
-
-    // Pause the ad if the URL doesn't match the allowed domain
-    if (!urlMatches) {
+    if (adUrl && !adUrl.includes(specifiedDomain)) {
       ad.pause();
-      Logger.log('Paused ad with ID: ' + ad.getId() + ' due to invalid domain.');
-      // Send email alert
-      MailApp.sendEmail(alertEmail, 'Ad Paused Due to Invalid Domain', 'Ad with ID ' + ad.getId() + ' has been paused due to an invalid landing page URL.');
+      pausedAds.push(`Ad ID: ${ad.getId()}, URL: ${adUrl}`);
+      Logger.log(`Paused ad with ID: ${ad.getId()} because the URL does not match the specified domain: ${specifiedDomain}`);
     }
   }
+  
+  // Send email if any ads were paused
+  if (pausedAds.length > 0) {
+    sendEmail(pausedAds, specifiedDomain, emailAddress);
+  }
+
+  Logger.log("Script completed.");
+}
+
+// Function to send email notification
+function sendEmail(pausedAds, specifiedDomain, emailAddress) {
+  const subject = `Google Ads Alert: Ads Paused for Incorrect Domain`;
+  const body = `The following ads were paused because their landing page URL did not match the specified domain: ${specifiedDomain}\n\n` +
+               pausedAds.join("\n");
+
+  MailApp.sendEmail(emailAddress, subject, body);
 }
