@@ -1,5 +1,5 @@
 function main() {
-  const specifiedDomain = "https://bakedbeauty.in/";
+  const specifiedDomain = "https://www.webtopia.co/";
   const emailAddress = "vvohra06@gmail.com";
   let pausedAds = []; // Array to store paused ads information
 
